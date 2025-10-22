@@ -48,7 +48,7 @@ This section describes how to test the Spotify Final Project APIs using **Postma
 
 - **Endpoint:** `POST /users/register`
 - **Description:** Registers a new user (Listener or Artist)
-- To verify real email account is required, and
+- To verify real email account is required to get the verification code, but before doing that do not forget to complete .properties file with your information it not to be useless
 - **Request Body (JSON):**
 ```json
 {
