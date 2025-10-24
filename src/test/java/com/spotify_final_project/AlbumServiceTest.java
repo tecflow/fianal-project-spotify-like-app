@@ -89,9 +89,12 @@ class AlbumServiceTest {
     void updateAlbum_ShouldThrow_WhenUnauthorized() {
         User artist = new User();
         artist.setId(1L);
+        artist.setRole(Role.ARTIST); // owner of the album
+
         User requester = new User();
         requester.setId(2L);
-        requester.setRole(null); // not admin
+        requester.setRole(Role.LISTENER); // non-admin, not owner
+
         Album album = new Album();
         album.setArtist(artist);
 
@@ -100,8 +103,12 @@ class AlbumServiceTest {
         when(albumRepository.findById(5L)).thenReturn(Optional.of(album));
         when(userRepository.findById(2L)).thenReturn(Optional.of(requester));
 
-        assertThrows(AuthenticationException.class, () -> albumService.updateAlbum(5L, request, 2L));
+        // This will now correctly throw AuthenticationException
+        assertThrows(AuthenticationException.class, () ->
+                albumService.updateAlbum(5L, request, 2L)
+        );
     }
+
 
     @Test
     void deleteAlbum_ShouldDeleteSuccessfully_WhenAuthorized() {
@@ -119,13 +126,23 @@ class AlbumServiceTest {
 
     @Test
     void getAlbumById_ShouldReturnAlbum_WhenFound() {
-        Album album = new Album();
-        album.setId(5L);
-        when(albumRepository.findById(5L)).thenReturn(Optional.of(album));
+        User artist = new User();
+        artist.setId(1L);
+        artist.setUsername("artist1");
 
-        AlbumResponse response = albumService.getAlbumById(5L);
-        assertEquals(5L, response.getId());
+        Album album = new Album();
+        album.setId(1L);
+        album.setTitle("Test Album");
+        album.setArtist(artist); // ✅ FIX
+
+        when(albumRepository.findById(1L)).thenReturn(Optional.of(album));
+
+        AlbumResponse response = albumService.getAlbumById(1L);
+
+        assertEquals("Test Album", response.getTitle());
+        assertEquals("artist1", response.getArtistUsername());
     }
+
 
     @Test
     void getAlbumById_ShouldThrow_WhenNotFound() {
@@ -135,32 +152,53 @@ class AlbumServiceTest {
 
     @Test
     void getAllAlbums_ShouldReturnList() {
+        User artist = new User();
+        artist.setId(1L);
+        artist.setUsername("artist1");
+
         Album album1 = new Album();
         album1.setId(1L);
+        album1.setTitle("Album1");
+        album1.setArtist(artist); // ✅ Fix
+
         Album album2 = new Album();
         album2.setId(2L);
+        album2.setTitle("Album2");
+        album2.setArtist(artist); // ✅ Fix
 
         when(albumRepository.findAll()).thenReturn(List.of(album1, album2));
 
         List<AlbumResponse> albums = albumService.getAllAlbums();
         assertEquals(2, albums.size());
+        assertEquals("artist1", albums.get(0).getArtistUsername());
     }
 
     @Test
     void deleteAlbum_ShouldThrow_WhenUnauthorized() {
-        User artist = new User();
-        artist.setId(1L);
-        User requester = new User();
-        requester.setId(2L);
-        requester.setRole(null); // not admin
+        User albumOwner = new User();
+        albumOwner.setId(1L);
+        albumOwner.setUsername("artist1");
+        albumOwner.setRole(Role.ARTIST);
+
+        User intruder = new User();
+        intruder.setId(2L);
+        intruder.setUsername("listener1");
+        intruder.setRole(Role.LISTENER);
+
         Album album = new Album();
-        album.setArtist(artist);
+        album.setId(1L);
+        album.setArtist(albumOwner);
 
-        when(albumRepository.findById(5L)).thenReturn(Optional.of(album));
-        when(userRepository.findById(2L)).thenReturn(Optional.of(requester));
+        when(albumRepository.findById(1L)).thenReturn(Optional.of(album));
+        when(userRepository.findById(2L)).thenReturn(Optional.of(intruder));
 
-        assertThrows(AuthenticationException.class, () -> albumService.deleteAlbum(5L, 2L));
+        assertThrows(AuthenticationException.class,
+                () -> albumService.deleteAlbum(1L, intruder.getId())
+        );
     }
+
+
+
 
     @Test
     void updateAlbum_ShouldSucceed_WhenAdmin() {

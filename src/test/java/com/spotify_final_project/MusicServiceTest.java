@@ -171,26 +171,42 @@ class MusicServiceTest {
 
     @Test
     void getMusicById_ShouldReturnMusic() {
+        User artist = new User();
+        artist.setId(1L);
+        artist.setUsername("testArtist");
+
         Music music = new Music();
         music.setId(1L);
         music.setTitle("Song");
+        music.setArtist(artist); // ✅ Fix
 
         when(musicRepository.findById(1L)).thenReturn(Optional.of(music));
 
         MusicResponse response = musicService.getMusicById(1L);
         assertEquals("Song", response.getTitle());
+        assertEquals("testArtist", response.getArtistUsername());
     }
 
     @Test
     void getAllMusics_ShouldReturnList() {
+        User artist = new User();
+        artist.setId(1L);
+        artist.setUsername("artist1");
+
         Music m1 = new Music();
+        m1.setTitle("Song1");
+        m1.setArtist(artist); // ✅ Fix
+
         Music m2 = new Music();
+        m2.setTitle("Song2");
+        m2.setArtist(artist); // ✅ Fix
 
         when(musicRepository.findAll()).thenReturn(List.of(m1, m2));
 
         List<MusicResponse> list = musicService.getAllMusics();
         assertEquals(2, list.size());
     }
+
 
     @Test
     void searchByTitle_ShouldReturnList() {

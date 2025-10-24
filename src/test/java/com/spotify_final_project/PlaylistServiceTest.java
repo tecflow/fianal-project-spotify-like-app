@@ -2,6 +2,7 @@ package com.spotify_final_project;
 
 import com.spotify_final_project.dto.playlist.CreatePlaylistRequest;
 import com.spotify_final_project.dto.playlist.PlaylistResponse;
+import com.spotify_final_project.enums.Role;
 import com.spotify_final_project.exception.auth.AuthenticationException;
 import com.spotify_final_project.exception.auth.UserNotFoundException;
 import com.spotify_final_project.exception.playlist.PlaylistNotFoundException;
@@ -131,6 +132,7 @@ class PlaylistServiceTest {
         User requester = new User();
         requester.setId(2L);
         requester.setUsername("requesterUser");
+        requester.setRole(Role.LISTENER); // ✅ FIX — must not be null
 
         Playlist playlist = new Playlist();
         playlist.setId(1L);
@@ -142,8 +144,11 @@ class PlaylistServiceTest {
         when(playlistRepository.findById(1L)).thenReturn(Optional.of(playlist));
         when(userRepository.findById(2L)).thenReturn(Optional.of(requester));
 
-        assertThrows(AuthenticationException.class, () -> playlistService.updatePlaylist(1L, request, 2L));
+        assertThrows(AuthenticationException.class, () ->
+                playlistService.updatePlaylist(1L, request, 2L)
+        );
     }
+
 
     @Test
     void deletePlaylist_ShouldDelete_WhenOwner() {
